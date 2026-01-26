@@ -1,0 +1,74 @@
+name: omniotp
+description: Secure TOTP authenticator with encrypted cloud sync
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.7.0
+  flutter: '>=3.27.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Core
+  crypto: ^3.0.6
+  uuid: ^4.5.1
+  intl: ^0.20.2
+  collection: ^1.19.0
+
+  # Firebase
+  firebase_core: ^3.12.1
+  firebase_auth: ^5.5.2
+  cloud_firestore: ^5.6.6
+  google_sign_in: ^6.2.2
+
+  # Security & Encryption
+  encrypt: ^5.0.3
+  pointycastle: ^3.9.1
+  flutter_secure_storage: ^9.2.4
+  local_auth: ^2.3.0
+
+  # QR & Camera
+  mobile_scanner: ^6.0.6
+  qr_flutter: ^4.1.0
+
+  # State Management
+  provider: ^6.1.2
+
+  # Utilities
+  shared_preferences: ^2.3.5
+
+  # Platform-specific
+  uni_links: ^0.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.14
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  adaptive_icon_background: "#1565C0"
+  adaptive_icon_foreground: "assets/logo.png"
+  min_sdk_android: 23
+  web:
+    generate: true
+    image_path: "assets/logo.png"
+  windows:
+    generate: true
+    image_path: "assets/logo.png"
+  macos:
+    generate: true
+    image_path: "assets/logo.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
