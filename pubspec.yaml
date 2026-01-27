@@ -41,8 +41,8 @@ dependencies:
   # Utilities
   shared_preferences: ^2.3.5
 
-  # Platform-specific
-  uni_links: ^0.5.1
+  # Platform-specific (deep links)
+  app_links: ^6.3.3
 
 dev_dependencies:
   flutter_test:

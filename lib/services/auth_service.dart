@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// Firebase Authentication service
@@ -21,7 +23,23 @@ class AuthService {
 
   AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
     : _auth = auth ?? FirebaseAuth.instance,
-      _googleSignIn = googleSignIn ?? GoogleSignIn();
+      _googleSignIn =
+          googleSignIn ??
+          GoogleSignIn(
+            // Use server client ID for Android (from google-services.json oauth_client type 3)
+            serverClientId: _getServerClientId(),
+            scopes: ['email'],
+          );
+
+  static String? _getServerClientId() {
+    // Server client ID is needed for Android
+    // This is the Web client ID from Firebase Console
+    if (kIsWeb) return null;
+    if (!kIsWeb && (Platform.isAndroid)) {
+      return '396184200838-97qfbjgbrphlv19o8ohkhlba3bbfup12.apps.googleusercontent.com';
+    }
+    return null;
+  }
 
   /// Sign in with Google
   /// Returns the user ID for sync operations

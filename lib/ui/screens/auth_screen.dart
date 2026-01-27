@@ -25,11 +25,20 @@ class _AuthScreenState extends State<AuthScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // App icon and title
-                Icon(
-                  Icons.security,
-                  size: 80,
-                  color: Theme.of(context).colorScheme.primary,
+                // App logo
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/logo.png',
+                    width: 100,
+                    height: 100,
+                    errorBuilder:
+                        (context, error, stackTrace) => Icon(
+                          Icons.security,
+                          size: 80,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
