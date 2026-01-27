@@ -64,6 +64,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '396184200838',
     projectId: 'omniotp-84dba',
     storageBucket: 'omniotp-84dba.firebasestorage.app',
+    androidClientId: '396184200838-bgcdjq4dkm67ocakcfnfank2i6vikrb8.apps.googleusercontent.com',
+    iosClientId: '396184200838-52khpacvtkbqm91mm1eqvcr4n6ou1kd0.apps.googleusercontent.com',
     iosBundleId: 'com.example.omniotp',
   );
 
@@ -73,6 +75,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '396184200838',
     projectId: 'omniotp-84dba',
     storageBucket: 'omniotp-84dba.firebasestorage.app',
+    androidClientId: '396184200838-bgcdjq4dkm67ocakcfnfank2i6vikrb8.apps.googleusercontent.com',
+    iosClientId: '396184200838-52khpacvtkbqm91mm1eqvcr4n6ou1kd0.apps.googleusercontent.com',
     iosBundleId: 'com.example.omniotp',
   );
 
@@ -85,4 +89,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'omniotp-84dba.firebasestorage.app',
     measurementId: 'G-NML8ES7N74',
   );
+
 }

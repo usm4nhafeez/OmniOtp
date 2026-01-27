@@ -197,9 +197,28 @@ jobs:
           name: web-app
           path: build/web
 
+  build-extension:
+    name: Build Chrome Extension
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create extension ZIP
+        run: |
+          cd extension
+          zip -r ../omniotp-chrome-extension.zip . -x "*.md" -x "icons/README.md"
+          cd ..
+
+      - name: Upload Extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chrome-extension
+          path: omniotp-chrome-extension.zip
+
   release:
     name: Create Release
-    needs: [build-android, build-windows, build-web]
+    needs: [build-android, build-windows, build-web, build-extension]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -220,6 +239,7 @@ jobs:
             artifacts/android-apk/app-release.apk
             artifacts/android-aab/app-release.aab
             artifacts/windows-app/omniotp-windows.zip
+            artifacts/chrome-extension/omniotp-chrome-extension.zip
           draft: false
           prerelease: false
         env:

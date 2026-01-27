@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniOTP</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
+          <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="currentColor"/>
+        </svg>
+        <h1>OmniOTP</h1>
+      </div>
+      <div class="header-actions">
+        <button id="sync-btn" class="icon-btn" title="Sync with cloud">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="currentColor"/>
+          </svg>
+        </button>
+        <button id="settings-btn" class="icon-btn" title="Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94L14.4 2.81c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer" id="timer">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+      </svg>
+      <span id="timer-seconds">30</span>s
+    </div>
+
+    <!-- Authentication Screen -->
+    <div id="auth-screen" class="screen">
+      <div class="auth-content">
+        <div class="logo-large">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/>
+            <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="currentColor"/>
+          </svg>
+        </div>
+        <h2 id="auth-title">Sign In</h2>
+        <p class="subtitle">Enter your credentials to sync with mobile app</p>
+        
+        <form id="auth-form" data-mode="signin">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Password" required minlength="6">
+          </div>
+          <button type="submit" id="auth-submit-btn" class="btn btn-primary">Sign In</button>
+        </form>
+        
+        <button id="toggle-auth-mode" class="btn-link">Need an account? Sign Up</button>
+        <button id="forgot-password-btn" class="btn-link">Forgot Password?</button>
+        
+        <div class="divider">or</div>
+        
+        <button id="skip-auth-btn" class="btn btn-secondary">Use Locally Only</button>
+        
+        <div class="info-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+          </svg>
+          <span>Your secrets are encrypted end-to-end</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Screen -->
+    <div id="main-screen" class="screen hidden">
+      <!-- Empty State -->
+      <div id="empty-state" class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" opacity="0.3">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="currentColor"/>
+        </svg>
+        <h3>No Accounts Yet</h3>
+        <p>Add your first TOTP account to get started</p>
+      </div>
+
+      <!-- Accounts List -->
+      <div id="accounts-list" class="accounts-list"></div>
+
+      <!-- Add Account Button -->
+      <button id="add-account-btn" class="fab">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Add Account Screen -->
+    <div id="add-account-screen" class="screen hidden">
+      <div class="screen-header">
+        <button id="back-btn" class="icon-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+        <h2>Add Account</h2>
+      </div>
+
+      <form id="add-account-form">
+        <div class="form-group">
+          <label for="secret">Secret Key</label>
+          <input type="text" id="secret" placeholder="Enter secret key or otpauth:// URL" required>
+        </div>
+        <div class="form-group">
+          <label for="issuer">Issuer</label>
+          <input type="text" id="issuer" placeholder="e.g., Google, GitHub" required>
+        </div>
+        <div class="form-group">
+          <label for="accountName">Account Name</label>
+          <input type="text" id="accountName" placeholder="e.g., user@example.com" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Account</button>
+      </form>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen hidden">
+      <div class="screen-header">
+        <button id="settings-back-btn" class="icon-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+        </button>
+        <h2>Settings</h2>
+      </div>
+
+      <div class="settings-content">
+        <div id="account-section" class="hidden">
+          <h3>Account</h3>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label">Email</div>
+              <div class="setting-value" id="user-email">Not signed in</div>
+            </div>
+          </div>
+          <div class="setting-item">
+            <button id="logout-btn" class="btn btn-danger">Sign Out</button>
+          </div>
+        </div>
+
+        <h3>Data</h3>
+        <div class="info-box" style="margin-bottom: 12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+          </svg>
+          <span>Sign in with the same account to sync across all platforms. Your data is encrypted end-to-end.</span>
+        </div>
+        <div class="setting-item">
+          <button id="download-cloud-btn" class="btn btn-primary">Download from Cloud</button>
+        </div>
+        <div class="setting-item">
+          <button id="upload-cloud-btn" class="btn btn-secondary">Upload to Cloud</button>
+        </div>
+        <div class="setting-item">
+          <button id="delete-all-btn" class="btn btn-danger">Delete All Data</button>
+        </div>
+
+        <h3>About</h3>
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label">Version</div>
+            <div class="setting-value">1.0.0</div>
+          </div>
+        </div>
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label">Encryption</div>
+            <div class="setting-value">AES-256-GCM (PBKDF2)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

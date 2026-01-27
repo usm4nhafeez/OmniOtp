@@ -34,7 +34,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.omniotp"
-        minSdk = flutter.minSdkVersion
+        minSdk = flutter.minSdkVersion // Required for biometric authentication
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 
 import '../../main.dart';
 import '../../services/auth_service.dart';
-import '../../services/biometric_service.dart';
 import '../../services/totp_service.dart';
 import '../../models/totp_account.dart';
 import '../components/account_card.dart';
@@ -38,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<TotpProvider>();
     final authService = context.read<AuthService>();
-    final biometricService = context.read<BiometricService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -50,19 +48,18 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.sync),
               onPressed: () => _syncWithCloud(provider),
             ),
-          // Settings / Lock
+          // Settings
           IconButton(
-            icon: const Icon(Icons.lock),
-            onPressed: () => _lockApp(biometricService),
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
         ],
       ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : provider.accounts.isEmpty
-              ? _buildEmptyState()
-              : _buildAccountList(provider),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : provider.accounts.isEmpty
+          ? _buildEmptyState()
+          : _buildAccountList(provider),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addAccount(context),
         child: const Icon(Icons.add),
@@ -81,14 +78,13 @@ class _HomeScreenState extends State<HomeScreen> {
               'assets/logo.png',
               width: 80,
               height: 80,
-              errorBuilder:
-                  (context, error, stackTrace) => Icon(
-                    Icons.security_outlined,
-                    size: 80,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.5),
-                  ),
+              errorBuilder: (context, error, stackTrace) => Icon(
+                Icons.security_outlined,
+                size: 80,
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.5),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -178,27 +174,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _deleteAccount(BuildContext context, TotpAccount account) {
     return showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Delete Account'),
-            content: Text('Remove ${account.issuer} (${account.accountName})?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  await context.read<TotpProvider>().deleteAccount(account.id);
-                },
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: Text('Remove ${account.issuer} (${account.accountName})?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await context.read<TotpProvider>().deleteAccount(account.id);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -221,13 +213,5 @@ class _HomeScreenState extends State<HomeScreen> {
         ).showSnackBar(SnackBar(content: Text('Sync failed: $e')));
       }
     }
-  }
-
-  Future<void> _lockApp(BiometricService biometricService) async {
-    await biometricService.stopAuthentication();
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
   }
 }

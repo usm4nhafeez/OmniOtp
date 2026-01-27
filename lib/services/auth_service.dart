@@ -1,111 +1,99 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 /// Firebase Authentication service
-/// Handles user identity for cloud sync access
-/// Authentication is NOT used as encryption key (per security requirements)
+/// Handles user identity for cloud sync access using email/password
 class AuthService {
   final FirebaseAuth _auth;
-  final GoogleSignIn _googleSignIn;
 
-  // Stream for auth state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  // Current user getter
   User? get currentUser => _auth.currentUser;
-
-  // Check if user is signed in
   bool get isSignedIn => _auth.currentUser != null;
 
-  AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
-    : _auth = auth ?? FirebaseAuth.instance,
-      _googleSignIn =
-          googleSignIn ??
-          GoogleSignIn(
-            // Use server client ID for Android (from google-services.json oauth_client type 3)
-            serverClientId: _getServerClientId(),
-            scopes: ['email'],
-          );
+  AuthService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
 
-  static String? _getServerClientId() {
-    // Server client ID is needed for Android
-    // This is the Web client ID from Firebase Console
-    if (kIsWeb) return null;
-    if (!kIsWeb && (Platform.isAndroid)) {
-      return '396184200838-97qfbjgbrphlv19o8ohkhlba3bbfup12.apps.googleusercontent.com';
-    }
-    return null;
-  }
-
-  /// Sign in with Google
-  /// Returns the user ID for sync operations
-  Future<AuthResult> signInWithGoogle() async {
+  /// Sign up with email and password
+  Future<AuthResult> signUpWithEmail(String email, String password) async {
     try {
-      // Trigger Google Sign-In
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        return AuthResult.cancelled();
-      }
-
-      // Get auth credentials
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
-
-      // Sign in to Firebase
-      await _auth.signInWithCredential(credential);
 
       return AuthResult.success(
-        userId: _auth.currentUser!.uid,
-        email: _auth.currentUser!.email,
-        displayName: _auth.currentUser!.displayName,
+        userId: userCredential.user!.uid,
+        email: userCredential.user?.email,
+        displayName: userCredential.user?.displayName,
       );
     } on FirebaseAuthException catch (e) {
-      return AuthResult.error(e.message ?? 'Sign in failed');
+      debugPrint('SignUp Error: ${e.code} - ${e.message}');
+      return AuthResult.error(_getErrorMessage(e.code));
     } catch (e) {
-      return AuthResult.error('An unexpected error occurred');
+      debugPrint('SignUp Error: $e');
+      return AuthResult.error('Sign up failed: $e');
+    }
+  }
+
+  /// Sign in with email and password
+  Future<AuthResult> signInWithEmail(String email, String password) async {
+    try {
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      return AuthResult.success(
+        userId: userCredential.user!.uid,
+        email: userCredential.user?.email,
+        displayName: userCredential.user?.displayName,
+      );
+    } on FirebaseAuthException catch (e) {
+      debugPrint('SignIn Error: ${e.code} - ${e.message}');
+      return AuthResult.error(_getErrorMessage(e.code));
+    } catch (e) {
+      debugPrint('SignIn Error: $e');
+      return AuthResult.error('Sign in failed: $e');
+    }
+  }
+
+  /// Send password reset email
+  Future<AuthResult> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      return AuthResult.success(userId: '', email: email, displayName: null);
+    } on FirebaseAuthException catch (e) {
+      return AuthResult.error(_getErrorMessage(e.code));
+    } catch (e) {
+      return AuthResult.error('Failed to send reset email');
     }
   }
 
   /// Sign out
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
     await _auth.signOut();
   }
 
-  /// Delete account and all associated data
+  /// Delete account
   Future<AuthResult> deleteAccount() async {
     try {
       await currentUser?.delete();
       return AuthResult.success(userId: '', email: null, displayName: null);
     } on FirebaseAuthException catch (e) {
-      return AuthResult.error(e.message ?? 'Account deletion failed');
+      return AuthResult.error(_getErrorMessage(e.code));
     }
   }
 
-  /// Get user ID for sync operations
-  String? getUserId() {
-    return _auth.currentUser?.uid;
-  }
-
-  /// Re-authenticate (required for sensitive operations)
-  Future<AuthResult> reauthenticateWithGoogle() async {
+  /// Re-authenticate with email/password (required for sensitive operations)
+  Future<AuthResult> reauthenticateWithEmail(
+    String email,
+    String password,
+  ) async {
     try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        return AuthResult.cancelled();
-      }
-
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
       );
 
       await _auth.currentUser?.reauthenticateWithCredential(credential);
@@ -116,6 +104,35 @@ class AuthService {
       );
     } catch (e) {
       return AuthResult.error('Re-authentication failed');
+    }
+  }
+
+  /// Get user ID for sync operations
+  String? getUserId() {
+    return _auth.currentUser?.uid;
+  }
+
+  /// Get user-friendly error messages
+  String _getErrorMessage(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return 'This email is already registered';
+      case 'invalid-email':
+        return 'Invalid email address';
+      case 'weak-password':
+        return 'Password is too weak (min 6 characters)';
+      case 'user-not-found':
+        return 'No account found with this email';
+      case 'wrong-password':
+        return 'Incorrect password';
+      case 'user-disabled':
+        return 'This account has been disabled';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later';
+      case 'invalid-credential':
+        return 'Invalid email or password';
+      default:
+        return 'Authentication failed. Please try again';
     }
   }
 }

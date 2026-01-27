@@ -5,18 +5,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/totp_account.dart';
 import 'encryption_service.dart';
 import 'local_storage_service.dart';
+import 'sync_encryption_service.dart';
 
 /// Cloud sync service using Firebase Firestore
-/// Stores only encrypted blobs - Firestore cannot decrypt secrets
+/// Uses password-derived encryption for cross-platform compatibility
 class CloudSyncService {
   static const String _vaultCollection = 'vaults';
   static const String _vaultField = 'encryptedData';
   static const String _userIdField = 'userId';
   static const String _updatedAtField = 'updatedAt';
+  static const String _versionField = 'version';
 
   final FirebaseFirestore _firestore;
-  final EncryptionService _encryption;
+  final EncryptionService _encryption; // Local encryption (device-specific)
   final LocalStorageService _localStorage;
+  SyncEncryptionService? _syncEncryption; // Cross-platform encryption
 
   CloudSyncService({
     FirebaseFirestore? firestore,
@@ -26,21 +29,41 @@ class CloudSyncService {
        _encryption = encryption,
        _localStorage = localStorage;
 
+  /// Initialize sync encryption with user's credentials
+  /// Must be called after successful login
+  Future<void> initializeSyncEncryption(String email, String password) async {
+    _syncEncryption = SyncEncryptionService();
+    await _syncEncryption!.deriveKey(email, password);
+  }
+
+  /// Clear sync encryption key (on logout)
+  void clearSyncEncryption() {
+    _syncEncryption?.clearKey();
+    _syncEncryption = null;
+  }
+
+  /// Check if sync encryption is ready
+  bool get isSyncReady => _syncEncryption?.isInitialized ?? false;
+
   /// Get the user's vault document reference
   DocumentReference _getUserVault(String userId) {
     return _firestore.collection(_vaultCollection).doc(userId);
   }
 
-  /// Sync local data to cloud
-  /// Only uploads encrypted data - server never sees secrets
+  /// Sync local data to cloud using password-derived encryption
   Future<void> syncToCloud(String userId, List<TotpAccount> accounts) async {
+    if (_syncEncryption == null || !_syncEncryption!.isInitialized) {
+      throw SyncException('Sync encryption not initialized. Please sign in again.');
+    }
+
     try {
       final accountMaps = accounts.map((a) => a.toVaultMap()).toList();
-      final encryptedData = await _encryption.encryptAccounts(accountMaps);
+      final encryptedData = await _syncEncryption!.encryptAccounts(accountMaps);
 
       await _getUserVault(userId).set({
         _vaultField: encryptedData,
         _userIdField: userId,
+        _versionField: 2, // Version 2 = password-derived encryption
         _updatedAtField: FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
@@ -48,9 +71,12 @@ class CloudSyncService {
     }
   }
 
-  /// Sync cloud data to local
-  /// Downloads and decrypts encrypted blob
+  /// Sync cloud data to local using password-derived encryption
   Future<List<TotpAccount>> syncFromCloud(String userId) async {
+    if (_syncEncryption == null || !_syncEncryption!.isInitialized) {
+      throw SyncException('Sync encryption not initialized. Please sign in again.');
+    }
+
     try {
       final doc = await _getUserVault(userId).get();
       final data = doc.data() as Map<String, dynamic>?;
@@ -59,9 +85,20 @@ class CloudSyncService {
       }
 
       final encryptedData = data[_vaultField] as String;
-      final decryptedMaps = await _encryption.decryptAccounts(encryptedData);
+      final version = data[_versionField] as int? ?? 1;
+      
+      if (version < 2) {
+        // Old format - can't decrypt without device-specific key
+        throw SyncException(
+          'Cloud data uses old encryption format. '
+          'Please re-upload from the original device or add accounts again.'
+        );
+      }
+
+      final decryptedMaps = await _syncEncryption!.decryptAccounts(encryptedData);
       return decryptedMaps.map((m) => TotpAccount.fromVaultMap(m)).toList();
     } catch (e) {
+      if (e is SyncException) rethrow;
       throw SyncException('Failed to sync from cloud: $e');
     }
   }

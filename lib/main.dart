@@ -15,6 +15,7 @@ import 'models/totp_account.dart';
 import 'ui/screens/home_screen.dart';
 import 'ui/screens/auth_screen.dart';
 import 'ui/screens/add_account_screen.dart';
+import 'ui/screens/settings_screen.dart';
 import 'ui/theme/app_theme.dart';
 
 void main() async {
@@ -27,7 +28,9 @@ void main() async {
   final encryptionService = EncryptionService();
   await encryptionService.initialize();
 
+  // Initialize auth service
   final authService = AuthService();
+
   final biometricService = BiometricService();
   final localStorageService = LocalStorageService(
     encryption: encryptionService,
@@ -77,6 +80,7 @@ class OmniOtpApp extends StatelessWidget {
       routes: {
         '/home': (context) => const HomeScreen(),
         '/add-account': (context) => const AddAccountScreen(),
+        '/settings': (context) => const SettingsScreen(),
       },
     );
   }
@@ -93,6 +97,7 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _isAuthenticated = false;
   bool _isLoading = true;
+  bool _biometricRequired = false;
 
   @override
   void initState() {
@@ -110,7 +115,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
     final useBiometric = prefs.getBool('use_biometric') ?? false;
 
     if (isBiometricAvailable && useBiometric) {
-      // Try biometric authentication
+      // Biometric is required - must authenticate
+      setState(() => _biometricRequired = true);
+
       final success = await biometricService.authenticate(
         reason: 'Unlock OmniOTP',
       );
@@ -121,7 +128,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         });
       }
     } else if (authService.isSignedIn) {
-      // User is signed in to Firebase
+      // User is signed in to Firebase, no biometric required
       if (mounted) {
         setState(() {
           _isAuthenticated = true;
@@ -129,7 +136,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         });
       }
     } else {
-      // No biometric or sign-in required
+      // No biometric required and not signed in - show auth screen
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -138,10 +145,62 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
   }
 
+  Future<void> _retryBiometric() async {
+    final biometricService = context.read<BiometricService>();
+    final success = await biometricService.authenticate(
+      reason: 'Unlock OmniOTP',
+    );
+    if (mounted && success) {
+      setState(() => _isAuthenticated = true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // If biometric is required but failed, show locked screen
+    if (_biometricRequired && !_isAuthenticated) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock_outline, size: 80, color: Colors.grey),
+                const SizedBox(height: 24),
+                Text(
+                  'OmniOTP is Locked',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Authenticate to access your accounts',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  onPressed: _retryBiometric,
+                  icon: const Icon(Icons.fingerprint),
+                  label: const Text('Unlock with Biometrics'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     if (!_isAuthenticated) {
@@ -176,9 +235,13 @@ class TotpProvider with ChangeNotifier {
     await _localStorage.addAccount(account);
     await loadAccounts();
 
-    // Sync to cloud if signed in
-    if (_auth.isSignedIn) {
-      await _cloudSync.syncToCloud(_auth.getUserId()!, _accounts);
+    // Sync to cloud if signed in and sync encryption is ready
+    if (_auth.isSignedIn && _cloudSync.isSyncReady) {
+      try {
+        await _cloudSync.syncToCloud(_auth.getUserId()!, _accounts);
+      } catch (e) {
+        debugPrint('Cloud sync failed: $e');
+      }
     }
   }
 
@@ -186,9 +249,13 @@ class TotpProvider with ChangeNotifier {
     await _localStorage.deleteAccount(accountId);
     await loadAccounts();
 
-    // Sync to cloud if signed in
-    if (_auth.isSignedIn) {
-      await _cloudSync.syncToCloud(_auth.getUserId()!, _accounts);
+    // Sync to cloud if signed in and sync encryption is ready
+    if (_auth.isSignedIn && _cloudSync.isSyncReady) {
+      try {
+        await _cloudSync.syncToCloud(_auth.getUserId()!, _accounts);
+      } catch (e) {
+        debugPrint('Cloud sync failed: $e');
+      }
     }
   }
 
@@ -207,6 +274,10 @@ class TotpProvider with ChangeNotifier {
 
   Future<void> syncWithCloud() async {
     if (!_auth.isSignedIn) return;
+    if (!_cloudSync.isSyncReady) {
+      debugPrint('Sync encryption not ready - user needs to sign in again');
+      return;
+    }
     await _cloudSync.performSync(_auth.getUserId()!);
     await loadAccounts();
   }

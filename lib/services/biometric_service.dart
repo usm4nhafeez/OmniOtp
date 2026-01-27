@@ -6,12 +6,14 @@ class BiometricService {
   final LocalAuthentication _localAuth;
 
   BiometricService({LocalAuthentication? localAuth})
-      : _localAuth = localAuth ?? LocalAuthentication();
+    : _localAuth = localAuth ?? LocalAuthentication();
 
   /// Check if biometric authentication is available on the device
   Future<bool> isBiometricAvailable() async {
     try {
-      return await _localAuth.canCheckBiometrics;
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isSupported = await _localAuth.isDeviceSupported();
+      return canCheck && isSupported;
     } catch (e) {
       return false;
     }
@@ -33,13 +35,7 @@ class BiometricService {
     bool biometricOnly = true,
   }) async {
     try {
-      return await _localAuth.authenticate(
-        localizedReason: reason,
-        options: AuthenticationOptions(
-          biometricOnly: biometricOnly,
-          stickyAuth: true,
-        ),
-      );
+      return await _localAuth.authenticate(localizedReason: reason);
     } catch (e) {
       return false;
     }
