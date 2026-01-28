@@ -16,3 +16,8 @@
 
 # Google Sign In
 -keep class com.google.android.gms.auth.** { *; }
+
+# Fix for Flutter 3.38.5 / Play Core R8 error
+-dontwarn com.google.android.play.core.**
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**
+-keep class com.google.android.play.core.** { *; }
